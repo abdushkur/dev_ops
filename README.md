@@ -30,6 +30,9 @@ dev_ops/
 cd github
 ./manage-github-secrets.sh  # Interactive mode
 ./manage-github-secrets.sh --add SECRET_NAME "secret_value"  # Direct mode
+
+# For submodules: Set GITHUB_OWNER and GITHUB_REPO in common/.env
+# Or use: ./manage-github-secrets.sh --repo owner/repo --add SECRET_NAME "value"
 ```
 
 ### Google Service Account Creation
@@ -48,6 +51,15 @@ cd google
 - **GitHub scripts**: Node.js, npm
 - **Google scripts**: gcloud CLI, authenticated Google account
 - **Common**: Valid `.env` file with required tokens and IDs
+
+## Using as a Git Submodule
+
+This repository is designed to be used as a git submodule in your projects. See [SUBMODULE_USAGE.md](SUBMODULE_USAGE.md) for detailed instructions on:
+
+- Adding this repository as a submodule
+- Configuring for parent project usage
+- Cloning projects with submodules
+- Updating and maintaining submodules
 
 ## Changelog
 

@@ -18,6 +18,10 @@ GITHUB_OWNER=""
 GITHUB_REPO=""
 GITHUB_TOKEN=""
 
+# Track source of repository configuration
+REPO_FROM_ENV=""
+REPO_FROM_PARAM=""
+
 # Function to print colored output
 print_status() {
     local color=$1
@@ -48,6 +52,12 @@ load_env_config() {
 
         print_status $GREEN "✅ Configuration loaded:"
         print_status $BLUE "   GitHub Token: [SET]"
+        
+        # Check if repository is specified in .env
+        if [ -n "$GITHUB_OWNER" ] && [ -n "$GITHUB_REPO" ]; then
+            print_status $BLUE "   Repository: $GITHUB_OWNER/$GITHUB_REPO (from .env)"
+            REPO_FROM_ENV=1
+        fi
     else
         print_status $RED "❌ ERROR: .env file not found at $env_file"
         print_status $YELLOW "   Please create a .env file with GITHUB_TOKEN=your_token"
@@ -57,11 +67,27 @@ load_env_config() {
 
 # Function to detect GitHub repository from git remote
 detect_github_repo() {
+    # Skip auto-detection if already set (e.g., via --repo parameter or .env file)
+    if [ -n "$GITHUB_OWNER" ] && [ -n "$GITHUB_REPO" ]; then
+        # Determine source of repository configuration
+        if [ -n "$REPO_FROM_PARAM" ]; then
+            print_status $GREEN "✅ Using repository from --repo parameter: $GITHUB_OWNER/$GITHUB_REPO"
+        elif [ -n "$REPO_FROM_ENV" ]; then
+            print_status $GREEN "✅ Using repository from .env file: $GITHUB_OWNER/$GITHUB_REPO"
+        else
+            print_status $GREEN "✅ Using specified repository: $GITHUB_OWNER/$GITHUB_REPO"
+        fi
+        return
+    fi
+    
     local remote_url=$(git remote get-url origin 2>/dev/null || echo "")
 
     if [ -z "$remote_url" ]; then
         print_status $RED "❌ ERROR: No git remote 'origin' found"
-        print_status $YELLOW "   Please run this script from a git repository"
+        print_status $YELLOW "   Please do one of the following:"
+        print_status $YELLOW "   1. Set GITHUB_OWNER and GITHUB_REPO in your .env file"
+        print_status $YELLOW "   2. Use --repo owner/repository parameter"
+        print_status $YELLOW "   3. Run this script from a git repository"
         exit 1
     fi
 
@@ -69,10 +95,29 @@ detect_github_repo() {
     if [[ "$remote_url" =~ github\.com[:/]([^/]+)/([^/]+)\.git$ ]]; then
         GITHUB_OWNER="${BASH_REMATCH[1]}"
         GITHUB_REPO="${BASH_REMATCH[2]}"
-        print_status $GREEN "✅ Detected GitHub repository: $GITHUB_OWNER/$GITHUB_REPO"
+        print_status $GREEN "✅ Auto-detected GitHub repository: $GITHUB_OWNER/$GITHUB_REPO"
     else
         print_status $RED "❌ ERROR: Could not parse GitHub repository from remote URL"
         print_status $YELLOW "   Remote URL: $remote_url"
+        print_status $YELLOW "   Please set GITHUB_OWNER and GITHUB_REPO in your .env file"
+        print_status $YELLOW "   or use --repo owner/repository parameter"
+        exit 1
+    fi
+}
+
+# Function to parse repository from --repo parameter
+parse_repo_param() {
+    local repo_param="$1"
+    
+    if [[ "$repo_param" =~ ^([^/]+)/([^/]+)$ ]]; then
+        GITHUB_OWNER="${BASH_REMATCH[1]}"
+        GITHUB_REPO="${BASH_REMATCH[2]}"
+        REPO_FROM_PARAM=1
+        print_status $BLUE "📌 Repository set to: $GITHUB_OWNER/$GITHUB_REPO"
+    else
+        print_status $RED "❌ ERROR: Invalid repository format: $repo_param"
+        print_status $YELLOW "   Expected format: owner/repository"
+        print_status $YELLOW "   Example: --repo abdushkur/lebbey_flutter"
         exit 1
     fi
 }
@@ -327,15 +372,21 @@ show_usage() {
     echo "Non-interactive mode:"
     echo "  $0 --add SECRET_NAME SECRET_VALUE  # Add/update a secret"
     echo "  $0 --check SECRET_NAME             # Check if secret exists"
+    echo "  $0 --repo OWNER/REPO ...           # Specify repository manually"
     echo
     echo "Examples:"
     echo "  $0 --add ENV_FILE 'content=value'"
     echo "  $0 --check FASTLANE_SERVICE_ACCOUNT"
+    echo "  $0 --repo abdushkur/lebbey_flutter --add SECRET_NAME 'value'"
+    echo "  $0 --repo owner/repo --check SECRET_NAME"
     echo
     echo "Options:"
+    echo "  --repo OWNER/REPO                  Specify GitHub repository (overrides auto-detection)"
     echo "  --add SECRET_NAME SECRET_VALUE     Add or update a secret"
     echo "  --check SECRET_NAME                Check if secret exists (returns 0 if exists, 1 if not)"
     echo "  -h, --help                         Show this help message"
+    echo
+    echo "Note: When running from a git submodule, use --repo to specify the parent repository."
 }
 
 # Function to handle non-interactive secret addition
@@ -410,19 +461,48 @@ main() {
         exit 1
     fi
 
-    if ! command -v git &> /dev/null; then
+    # Git is optional if --repo is provided
+    local git_required=true
+    
+    # Parse arguments to handle --repo parameter
+    local args=("$@")
+    local new_args=()
+    local i=0
+    
+    while [ $i -lt $# ]; do
+        case "${args[$i]}" in
+            --repo)
+                if [ $((i+1)) -lt $# ]; then
+                    parse_repo_param "${args[$((i+1))]}"
+                    git_required=false
+                    ((i+=2))
+                else
+                    print_status $RED "❌ ERROR: --repo requires a repository argument"
+                    show_usage
+                    exit 1
+                fi
+                ;;
+            *)
+                new_args+=("${args[$i]}")
+                ((i++))
+                ;;
+        esac
+    done
+    
+    # Check git if required
+    if [ "$git_required" = true ] && ! command -v git &> /dev/null; then
         print_status $RED "❌ ERROR: 'git' command not found"
-        print_status $YELLOW "   Please run this script from a git repository"
+        print_status $YELLOW "   Please run this script from a git repository or use --repo option"
         exit 1
     fi
 
-    # Handle command-line arguments
-    case "${1:-}" in
+    # Handle remaining command-line arguments
+    case "${new_args[0]:-}" in
         --add)
-            handle_noninteractive_add "$2" "$3"
+            handle_noninteractive_add "${new_args[1]}" "${new_args[2]}"
             ;;
         --check)
-            handle_noninteractive_check "$2"
+            handle_noninteractive_check "${new_args[1]}"
             ;;
         -h|--help)
             show_usage
@@ -432,7 +512,7 @@ main() {
             # No arguments - run interactive mode
             ;;
         *)
-            print_status $RED "❌ ERROR: Unknown option '$1'"
+            print_status $RED "❌ ERROR: Unknown option '${new_args[0]}'"
             show_usage
             exit 1
             ;;
