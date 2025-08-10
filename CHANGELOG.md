@@ -15,6 +15,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Domain and API restrictions for security
   - Automatic project switching and restoration
   - Configuration via `.env` file for domains, bundle IDs, and API services
+- Automatic GitHub secret creation for `github-actions` service accounts
+  - Creates/updates `APP_HOSTING_GITHUB_ACTION_SERVICE_ACCOUNT` secret
+- **GitHub Actions workflow samples** in `github/actions_sample/`:
+  - `flutter_ios.yaml` - Complete iOS build and deployment workflow with Fastlane
+  - `firebase-app-hosting-merge.yml` - Firebase App Hosting deployment workflow
+  - Pre-configured to use service account secrets created by our scripts
 
 ### Changed
 
@@ -23,6 +29,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `ANDROID_APP_PACKAGE_NAME` and `IOS_APP_BUNDLE_ID` for mobile apps
   - `LOCALHOST_DOMAINS` for development environments
   - Configurable API lists (`FIREBASE_APIS`, `MAPS_APIS`, `SERVER_FIREBASE_APIS`)
+- Updated `create-service-accounts.sh` to create GitHub secrets for both account types:
+  - `fastlane` → `FASTLANE_SERVICE_ACCOUNT`
+  - `github-actions` → `APP_HOSTING_GITHUB_ACTION_SERVICE_ACCOUNT`
 
 ## [1.3.0] - 2024-08-09
 

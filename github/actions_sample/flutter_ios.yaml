@@ -1,0 +1,45 @@
+name: Fastlane iOS Action
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  build:
+    name: Build iOS App
+    runs-on: macOS-latest
+    if: ${{ !contains(github.event.head_commit.message, 'skip release') }}
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        submodules: false
+
+    - name: Set up Ruby --- installs fastlane and cocoapods
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: '3.4.4'
+        working-directory: ./ios
+        bundler-cache: true # runs 'bundle install' and caches installed gems automatically
+    - name: Set up Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        channel: stable
+        flutter-version: 3.29.3
+        cache: true
+        # optional parameters follow
+        cache-key: "flutter-:os:-:channel:-:version:-:arch:-:hash:" # optional, change this to force refresh cache
+        cache-path: "${{ runner.tool_cache }}/flutter/:channel:-:version:-:arch:" # optional, change this to specify the cache path
+        pub-cache-key: "flutter-pub:os:-:channel:-:version:-:arch:-:hash:" # optional, change this to force refresh cache of dart pub get dependencies
+        pub-cache-path: "${{ runner.tool_cache }}/flutter/:channel:-:version:-:arch:" # optional, change this to specify the cache path
+    - name: put env and service account file
+      run: |
+        echo "${{ secrets.ENV_FILE }}" > ios/.env
+        echo "CI=true" >> ios/.env
+        echo "${{ secrets.FASTLANE_SERVICE_ACCOUNT }}" > ios/fastlane/fastlane-serviceAccount.json
+        echo "API_KEY=TEST_Key" > .env
+    - name: Fastlane
+      run: cd ./ios && bundle exec fastlane beta

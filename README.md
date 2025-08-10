@@ -11,7 +11,10 @@ dev_ops/
 │   └── .env.example # Example environment configuration
 ├── github/          # GitHub-related tools and scripts
 │   ├── manage-github-secrets.sh    # Manage GitHub Actions secrets
-│   └── github-secret-encrypt.js    # Encryption helper for GitHub secrets
+│   ├── github-secret-encrypt.js    # Encryption helper for GitHub secrets
+│   └── actions_sample/              # Sample GitHub Actions workflows
+│       ├── flutter_ios.yaml        # iOS build with Fastlane
+│       └── firebase-app-hosting-merge.yml  # Firebase App Hosting deployment
 └── google/          # Google Cloud Platform scripts
     ├── create-service-accounts.sh  # Create GCP service accounts
     └── rotate-api-keys.sh          # Create and rotate API keys
@@ -35,6 +38,15 @@ cd github
 # For submodules: Set GITHUB_OWNER and GITHUB_REPO in common/.env
 # Or use: ./manage-github-secrets.sh --repo owner/repo --add SECRET_NAME "value"
 ```
+
+### GitHub Actions Workflows
+
+Sample workflows are provided in `github/actions_sample/`:
+
+- **flutter_ios.yaml** - iOS build and Firebase App Distribution deployment
+- **firebase-app-hosting-merge.yml** - Firebase App Hosting deployment
+
+Copy these to your project's `.github/workflows/` directory and customize as needed.
 
 ### Google Cloud Scripts
 

@@ -56,7 +56,7 @@ Automated service account creation with predefined roles for different services.
 - Automatic project switching and restoration
 - Timestamped service account naming
 - JSON key file generation
-- Automatic GitHub secret creation for Fastlane accounts
+- Automatic GitHub secret creation for both account types
 - Support for multiple account types
 
 **Supported Account Types:**
@@ -69,6 +69,7 @@ Automated service account creation with predefined roles for different services.
 
 2. **`github-actions`** - For Firebase Hosting deployment and other CI/CD operations
    - Used by GitHub Actions workflows for deploying to Firebase Hosting
+   - Automatically creates/updates `APP_HOSTING_GITHUB_ACTION_SERVICE_ACCOUNT` GitHub secret
    - Includes all necessary roles for Firebase services and artifact management
    - Roles attached:
      - `roles/artifactregistry.admin` - Manage artifact repositories

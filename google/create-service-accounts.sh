@@ -19,10 +19,12 @@
 #     ./create-service-accounts.sh fastlane                 # Creates fastlane service account
 #     ./create-service-accounts.sh github-actions           # Creates GitHub Actions service account
 #
-# Note: The script will automatically switch to the 'lebbey' project and restore
+# Note: The script will automatically switch to the target project and restore
 #       your original project when finished (regardless of success or failure).
-#       For fastlane accounts, it will also automatically create/update the
-#       'FASTLANE_SERVICE_ACCOUNT' GitHub Actions secret.
+#       
+#       GitHub Secrets created automatically:
+#       - fastlane: Creates/updates 'FASTLANE_SERVICE_ACCOUNT' secret
+#       - github-actions: Creates/updates 'APP_HOSTING_GITHUB_ACTION_SERVICE_ACCOUNT' secret
 
 set -e # Exit immediately if a command exits with a non-zero status.
 set -o pipefail # The return value of a pipeline is the status of the last command to exit with a non-zero status.
@@ -180,12 +182,6 @@ create_or_update_github_secret() {
 
   echo "Managing GitHub secret: $secret_name"
 
-  # Debug: show what we received
-  echo "🔍 DEBUG: Received secret_name: '$secret_name'"
-  echo "🔍 DEBUG: Received secret_value length: ${#secret_value} characters"
-  echo "🔍 DEBUG: Secret value preview (first 100 chars): ${secret_value:0:100}..."
-  echo "🔍 DEBUG: Secret value preview (last 100 chars): ...${secret_value: -100}"
-
   # Use our manage-github-secrets.sh script for proper secret management
   local script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
   local dev_ops_dir="$(dirname "$script_dir")"
@@ -198,11 +194,6 @@ create_or_update_github_secret() {
 
   # Make sure the script is executable
   chmod +x "$secrets_script"
-
-                # Debug: show what we're passing to the script
-              echo "🔍 DEBUG: Calling manage-github-secrets.sh with:"
-              echo "   - Script: $secrets_script"
-              echo "   - Args: --add '$secret_name' '${secret_value:0:50}...'"
 
               # Call the script in non-interactive mode
               if "$secrets_script" --add "$secret_name" "$secret_value"; then
@@ -350,7 +341,7 @@ create_service_account() {
   gcloud iam service-accounts keys create "${key_file}" \
     --iam-account="${new_email}"
 
-  # Handle GitHub secret management for fastlane accounts
+  # Handle GitHub secret management for service accounts
   if [ "$account_type" = "fastlane" ]; then
     echo ""
     echo "🔐 Managing GitHub Actions Secret: FASTLANE_SERVICE_ACCOUNT"
@@ -359,16 +350,20 @@ create_service_account() {
     local json_key_content
     json_key_content=$(cat "$key_file")
 
-    # Debug: show what we're about to pass
-    echo "🔍 DEBUG: JSON key file: $key_file"
-    echo "🔍 DEBUG: JSON content length: ${#json_key_content} characters"
-    echo "🔍 DEBUG: JSON content: ${json_key_content}"
-    echo "🔍 DEBUG: About to call create_or_update_github_secret with:"
-    echo "   - Secret name: FASTLANE_SERVICE_ACCOUNT"
-    echo "   - Content length: ${#json_key_content}"
-
     # Create or update the GitHub secret
     create_or_update_github_secret "FASTLANE_SERVICE_ACCOUNT" "$json_key_content"
+
+    echo "✅ GitHub secret management completed!"
+  elif [ "$account_type" = "github-actions" ]; then
+    echo ""
+    echo "🔐 Managing GitHub Actions Secret: APP_HOSTING_GITHUB_ACTION_SERVICE_ACCOUNT"
+
+    # Read the JSON key content
+    local json_key_content
+    json_key_content=$(cat "$key_file")
+
+    # Create or update the GitHub secret
+    create_or_update_github_secret "APP_HOSTING_GITHUB_ACTION_SERVICE_ACCOUNT" "$json_key_content"
 
     echo "✅ GitHub secret management completed!"
   fi
@@ -385,6 +380,11 @@ create_service_account() {
   if [ "$account_type" = "fastlane" ]; then
     echo "   2. ✅ GitHub secret 'FASTLANE_SERVICE_ACCOUNT' has been created/updated automatically."
     echo "   3. Use this key file in your application or CI/CD pipeline."
+    echo "   4. Store the key file securely and add it to your .gitignore if applicable."
+    echo "   5. After confirming the new service account works, consider deleting old service accounts."
+  elif [ "$account_type" = "github-actions" ]; then
+    echo "   2. ✅ GitHub secret 'APP_HOSTING_GITHUB_ACTION_SERVICE_ACCOUNT' has been created/updated automatically."
+    echo "   3. Use this key file in your GitHub Actions workflows."
     echo "   4. Store the key file securely and add it to your .gitignore if applicable."
     echo "   5. After confirming the new service account works, consider deleting old service accounts."
   else
