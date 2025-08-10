@@ -5,6 +5,25 @@ All notable changes to the DevOps scripts will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2024-08-09
+
+### Added
+
+- **rotate-api-keys.sh** script for Google Cloud API key rotation
+  - Support for 6 key types (prod-firebase, prod-maps, local-firebase, local-maps, server-maps, server-firebase)
+  - Timestamped API key naming for tracking
+  - Domain and API restrictions for security
+  - Automatic project switching and restoration
+  - Configuration via `.env` file for domains, bundle IDs, and API services
+
+### Changed
+
+- Moved API key configuration to `.env` file:
+  - `PROD_DOMAIN` for production domain restrictions
+  - `ANDROID_APP_PACKAGE_NAME` and `IOS_APP_BUNDLE_ID` for mobile apps
+  - `LOCALHOST_DOMAINS` for development environments
+  - Configurable API lists (`FIREBASE_APIS`, `MAPS_APIS`, `SERVER_FIREBASE_APIS`)
+
 ## [1.3.0] - 2024-08-09
 
 ### Added

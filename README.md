@@ -13,7 +13,8 @@ dev_ops/
 │   ├── manage-github-secrets.sh    # Manage GitHub Actions secrets
 │   └── github-secret-encrypt.js    # Encryption helper for GitHub secrets
 └── google/          # Google Cloud Platform scripts
-    └── create-service-accounts.sh  # Create GCP service accounts
+    ├── create-service-accounts.sh  # Create GCP service accounts
+    └── rotate-api-keys.sh          # Create and rotate API keys
 ```
 
 ## Setup
@@ -35,15 +36,19 @@ cd github
 # Or use: ./manage-github-secrets.sh --repo owner/repo --add SECRET_NAME "value"
 ```
 
-### Google Service Account Creation
+### Google Cloud Scripts
 
 ```bash
 cd google
-# Create service account for Fastlane (Firebase App Distribution deployment)
-./create-service-accounts.sh fastlane
 
-# Create service account for GitHub Actions (Firebase App Hosting deployment)
-./create-service-accounts.sh github-actions
+# Service Account Creation
+./create-service-accounts.sh fastlane        # For Firebase App Distribution
+./create-service-accounts.sh github-actions  # For Firebase Hosting deployment
+
+# API Key Rotation
+./rotate-api-keys.sh prod-firebase    # Production Firebase key
+./rotate-api-keys.sh local-maps       # Local development Maps key
+./rotate-api-keys.sh server-firebase  # Server-side Firebase key
 ```
 
 ## Prerequisites
